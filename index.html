@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
-<title>图床上传</title>
+<title>图床</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f1115">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,13 +17,17 @@
   html,body{margin:0;height:100%}
   body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
        font-size:15px;line-height:1.5;padding-bottom:calc(96px + var(--safe))}
-  .top{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;
-       padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:rgba(15,17,21,.92);backdrop-filter:blur(8px);
-       border-bottom:1px solid var(--line)}
+  body.noBottom{padding-bottom:calc(20px + var(--safe))}
+  .hd{position:sticky;top:0;z-index:5;background:rgba(15,17,21,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 16px 8px;max-width:640px;margin:0 auto}
   .top h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.5px}
   .top .conn{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:5px}
   .dot{width:7px;height:7px;border-radius:50%;background:var(--sub)}
   .dot.ok{background:var(--ok)}.dot.err{background:var(--err)}.dot.warn{background:var(--warn)}
+  .tabs{display:flex;gap:7px;padding:0 14px 10px;max-width:640px;margin:0 auto}
+  .tab{flex:1;text-align:center;padding:9px 4px;border-radius:10px;font-size:14px;color:var(--sub);
+       background:var(--card2);border:1px solid var(--line);cursor:pointer;user-select:none;transition:.12s}
+  .tab.sel{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:700}
   .wrap{padding:14px 14px 0;max-width:640px;margin:0 auto}
   .sec{margin-bottom:16px}
   .sec .lbl{font-size:12.5px;color:var(--sub);margin:0 0 8px 2px}
@@ -49,7 +53,43 @@
   .btn.gal{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
   .btn:disabled{opacity:.5}
   .empty{text-align:center;color:var(--sub);font-size:13.5px;padding:40px 0}
-  /* setup overlay */
+  /* ---- gallery ---- */
+  .gmeta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 10px;font-size:12.5px;color:var(--sub)}
+  .gbtn{border:1px solid var(--line);background:var(--card2);border-radius:9px;padding:7px 13px;font-size:12.5px;color:var(--txt);cursor:pointer}
+  .gbtn:active{opacity:.7}
+  .search{position:relative;margin:2px 0 4px}
+  .search input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:11px 36px 11px 34px;
+        color:var(--txt);font-size:14px;outline:none}
+  .search input:focus{border-color:var(--blue)}
+  .search .ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--sub);font-size:13px}
+  .search .clr{position:absolute;right:6px;top:50%;transform:translateY(-50%);color:var(--sub);font-size:15px;padding:4px 8px;cursor:pointer;display:none}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+  @media(min-width:560px){.grid{grid-template-columns:repeat(4,1fr)}}
+  .gi{position:relative;aspect-ratio:1/1;background:#0a0c10;border-radius:10px;overflow:hidden;cursor:pointer}
+  .gi img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .18s}
+  .gi:active img{transform:scale(.95)}
+  .gi .tag{position:absolute;left:0;right:0;bottom:0;padding:16px 7px 5px;font-size:10.5px;color:#cfd6e4;
+        background:linear-gradient(to top,rgba(0,0,0,.78),transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .more{background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:11px;padding:12px 28px;font-size:14px;cursor:pointer}
+  .loadbar{text-align:center;color:var(--sub);font-size:13px;padding:26px 0}
+  /* ---- lightbox ---- */
+  .lb{position:fixed;inset:0;z-index:40;background:rgba(6,8,12,.985);display:none;flex-direction:column}
+  .lb.show{display:flex}
+  .lbbar{display:flex;justify-content:space-between;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 16px 6px;font-size:13px;color:var(--sub)}
+  .lbbar .x{font-size:21px;color:#fff;padding:0 8px;cursor:pointer}
+  .lbimg{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:4px}
+  .lbimg img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+  .lbpath{padding:8px 16px 0;font-size:11.5px;color:var(--sub);word-break:break-all;text-align:center}
+  .lbbtns{display:flex;gap:8px;padding:12px 14px calc(14px + var(--safe))}
+  .lbbtns button{flex:1;border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:11px;
+        padding:12px 4px;font-size:12.5px;font-weight:600;cursor:pointer}
+  .lbbtns button:active{transform:scale(.97)}
+  .lbbtns button.danger{color:#fca5a5;border-color:#5b2020}
+  .lbnav{position:absolute;top:0;bottom:96px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;
+        pointer-events:none;padding:0 4px}
+  .lbnav div{pointer-events:auto;width:38px;height:70px;display:flex;align-items:center;justify-content:center;
+        font-size:30px;color:rgba(255,255,255,.5);cursor:pointer;user-select:none}
+  /* ---- sheet / toast ---- */
   .mask{position:fixed;inset:0;background:rgba(8,10,14,.72);z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
   .mask.show{display:flex}
   .sheet{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;max-width:420px;width:100%}
@@ -65,30 +105,57 @@
   .sheet summary{cursor:pointer}
   code{background:#000;padding:1px 5px;border-radius:5px;font-size:12px}
   .toast{position:fixed;left:50%;bottom:120px;transform:translateX(-50%) translateY(20px);background:#000;color:#fff;
-       padding:10px 18px;border-radius:10px;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:30}
+       padding:10px 18px;border-radius:10px;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:86vw;text-align:center}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
-  <div class="top">
-    <h1>🖼️ 图床</h1>
-    <div class="conn"><span class="dot" id="dot"></span><span id="connTxt">…</span>
-      <span id="gear" style="font-size:18px;padding:0 4px">⚙</span></div>
+  <div class="hd">
+    <div class="top">
+      <h1>🖼️ 图床</h1>
+      <div class="conn"><span class="dot" id="dot"></span><span id="connTxt">…</span>
+        <span id="gear" style="font-size:18px;padding:0 4px">⚙</span></div>
+    </div>
+    <div class="tabs">
+      <div class="tab sel" data-v="upload">⬆️ 上传</div>
+      <div class="tab" data-v="gallery">🗂️ 相册</div>
+    </div>
   </div>
 
-  <div class="wrap">
+  <!-- ============ 上传 ============ -->
+  <div class="wrap" id="viewUpload">
     <div class="sec">
       <div class="lbl">选择类型</div>
       <div class="chips" id="chips"></div>
     </div>
     <div class="sec">
-      <div class="lbl">上传记录</div>
+      <div class="lbl">本次上传</div>
       <div class="list" id="list"></div>
       <div class="empty" id="empty">还没有上传 · 用下方按钮传图</div>
     </div>
   </div>
 
-  <div class="bottombar">
+  <!-- ============ 相册 ============ -->
+  <div class="wrap" id="viewGallery" style="display:none">
+    <div class="search">
+      <span class="ic">🔍</span>
+      <input id="gq" placeholder="搜索文件名 / 分类 / 日期">
+      <span class="clr" id="gqClr">✕</span>
+    </div>
+    <div class="sec" style="margin:10px 0 0">
+      <div class="chips" id="gcats"></div>
+    </div>
+    <div class="gmeta">
+      <span id="gcount">—</span>
+      <span class="gbtn" id="gRefresh">↻ 刷新</span>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="loadbar" id="gLoading" style="display:none">读取中…</div>
+    <div class="empty" id="gempty" style="display:none">相册还是空的 · 去「上传」传几张</div>
+    <div style="text-align:center;padding:10px 0 26px"><button class="more" id="gMore" style="display:none">加载更多</button></div>
+  </div>
+
+  <div class="bottombar" id="bottombar">
     <button class="btn cam" id="btnCam">📷 拍照</button>
     <button class="btn gal" id="btnGal">🖼️ 相册</button>
   </div>
@@ -96,19 +163,33 @@
   <input type="file" id="cam" accept="image/*" capture="environment" hidden>
   <input type="file" id="gal" accept="image/*" multiple hidden>
 
+  <!-- 大图 -->
+  <div class="lb" id="lb">
+    <div class="lbbar"><span id="lbIdx">1 / 1</span><span class="x" id="lbX">✕</span></div>
+    <div class="lbimg"><img id="lbImg" alt=""></div>
+    <div class="lbpath" id="lbPath"></div>
+    <div class="lbbtns">
+      <button id="lbCopy">🔗 直链</button>
+      <button id="lbMd">📝 MD</button>
+      <button id="lbOpen">↗ 打开</button>
+      <button class="danger" id="lbDel">🗑 删除</button>
+    </div>
+    <div class="lbnav"><div id="lbPrev">‹</div><div id="lbNext">›</div></div>
+  </div>
+
   <!-- first-run / settings overlay -->
   <div class="mask" id="mask">
     <div class="sheet">
       <h2 id="sheetTitle">首次使用 · 填一次就好</h2>
       <p>粘贴你的 GitHub Token（只存在本机，之后永久记住，不用再填）。分类、仓库都内置好了。</p>
-      <input type="password" id="tok" placeholder="ghp_xxx 或 github_pat_xxx">
+      <input type="password" id="tok" placeholder="github_pat_xxx">
       <div class="row">
         <button class="btn ghost" id="btnClose">取消</button>
         <button class="btn cam" id="btnSave">保存</button>
       </div>
       <details>
         <summary>Token 怎么弄？</summary>
-        <p style="margin-top:8px">github.com → Settings → Developer settings → Personal access tokens → 生成，勾 <code>repo</code> 权限。建议用 fine-grained token，只授权 <code>photos-2026</code> 这一个仓库、勾 <code>Contents</code> 读写。</p>
+        <p style="margin-top:8px">github.com → 头像 → Settings → Developer settings → Personal access tokens → <b>Fine-grained tokens</b> → Generate new token；只选 <code>photos-2026</code> 这一个仓库，权限勾 <code>Contents: Read and write</code>。有效期选 7 天或 90 天都行。</p>
       </details>
     </div>
   </div>
@@ -121,17 +202,21 @@
   const $=id=>document.getElementById(id);
   const OWNER="xyf1111", REPO="photos-2026", BRANCH="main";
   const DEFCATS=["宝宝","家庭","旅行","生活","其它"];
-  const K="ghapp.v1";
+  const K="ghapp.v1", GKEY="ghgallery.v1";
   let cfg=Object.assign({cat:"宝宝",cats:DEFCATS.slice(),byDate:true,compress:true},
                         JSON.parse(localStorage.getItem(K)||"{}"));
   let TOKEN=localStorage.getItem("ghpat")||"";
   const save=()=>localStorage.setItem(K,JSON.stringify(cfg));
-  const hdr=(j)=>{const h={Authorization:"token "+TOKEN,Accept:"application/vnd.github+json"};if(j)h["Content-Type"]="application/json";return h;};
+  const hdr=(j)=>{const h={Accept:"application/vnd.github+json"};if(TOKEN)h.Authorization="token "+TOKEN;if(j)h["Content-Type"]="application/json";return h;};
+  const enc=p=>p.split("/").map(encodeURIComponent).join("/");
+  const cdn=p=>"https://cdn.jsdelivr.net/gh/"+OWNER+"/"+REPO+"@"+BRANCH+"/"+enc(p);
+  const thumb=p=>"https://images.weserv.nl/?output=webp&w=400&h=400&fit=cover&q=72&url="+
+                 encodeURIComponent("cdn.jsdelivr.net/gh/"+OWNER+"/"+REPO+"@"+BRANCH+"/"+p);
 
-  function toast(t){const el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),1400);}
+  function toast(t){const el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),1600);}
   function setConn(s,t){$("dot").className="dot "+(s||"");$("connTxt").textContent=t;}
 
-  // ---- chips ----
+  /* ============ 上传区 ============ */
   function renderChips(){
     if(!cfg.cats.includes(cfg.cat))cfg.cat=cfg.cats[0]||"其它";
     const box=$("chips");box.innerHTML="";
@@ -146,7 +231,6 @@
     box.appendChild(add);
   }
 
-  // ---- auth check ----
   async function checkAuth(){
     if(!TOKEN){setConn("err","未设置 Token");return false;}
     setConn("warn","连接中…");
@@ -158,12 +242,10 @@
     }catch(e){setConn("err","网络错误");return false;}
   }
 
-  // ---- upload ----
   function clean(n){return n.replace(/[^\w.\-\u4e00-\u9fa5]+/g,"_").replace(/_+/g,"_");}
   function stamp(){const d=new Date(),p=n=>String(n).padStart(2,"0");
     return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"_"+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds());}
   function ab2b64(buf){let bin="",B=new Uint8Array(buf),CH=0x8000;for(let i=0;i<B.length;i+=CH)bin+=String.fromCharCode.apply(null,B.subarray(i,i+CH));return btoa(bin);}
-  function enc(p){return p.split("/").map(encodeURIComponent).join("/");}
   function compress(file){return new Promise(res=>{
     const url=URL.createObjectURL(file),img=new Image();
     img.onload=()=>{const MAX=2000;let w=img.width,h=img.height;const s=Math.min(1,MAX/Math.max(w,h));w=Math.round(w*s);h=Math.round(h*s);
@@ -199,9 +281,10 @@
       const body={message:"upload "+path,content:b64,branch:BRANCH};if(sha)body.sha=sha;
       const r=await fetch(u,{method:"PUT",headers:hdr(true),body:JSON.stringify(body)});
       if(!r.ok){let msg=r.status;try{msg=(await r.json()).message;}catch(_){}throw new Error(msg);}
-      const link="https://cdn.jsdelivr.net/gh/"+OWNER+"/"+REPO+"@"+BRANCH+"/"+enc(path);
+      const link=cdn(path);
       url.textContent=link;st.className="st ok";st.textContent="✓";
-      el.onclick=()=>{navigator.clipboard.writeText(link).then(()=>toast("已复制直链"));};
+      el.onclick=()=>{navigator.clipboard.writeText(link).then(()=>toast("已复制直链")).catch(()=>toast(link));};
+      localStorage.removeItem(GKEY); // 下次进相册重新拉清单
     }catch(e){st.className="st err";st.textContent="✗";url.textContent=e.message||"失败";}
   }
 
@@ -211,13 +294,167 @@
     for(const f of files){ if(f.type.startsWith("image/")) await uploadFile(f); }
   }
 
-  // ---- buttons ----
+  /* ============ 相册区 ============ */
+  let gFiles=null, gCat="__all", gQ="", gList=[], gShown=0;
+  const PAGE=60;
+  let lbList=[], lbIdx=0;
+
+  async function loadTree(force){
+    if(!force){
+      try{const c=JSON.parse(localStorage.getItem(GKEY)||"null");
+        if(c&&Date.now()-c.ts<300000&&Array.isArray(c.f)){gFiles=c.f;return;}}catch(_){}
+    }
+    const r=await fetch(API+"/repos/"+OWNER+"/"+REPO+"/git/trees/"+BRANCH+"?recursive=1",{headers:hdr()});
+    if(!r.ok){
+      if(r.status===401)setConn("err","Token 无效");
+      throw new Error(r.status===403?"接口限流 · 稍后再试":("读取失败 "+r.status));
+    }
+    const j=await r.json();
+    gFiles=(j.tree||[])
+      .filter(t=>t.type==="blob"&&t.path.indexOf("/")>0        // 只收 分类/年/月/ 下的图
+                 &&/\.(jpe?g|png|webp|gif|avif|bmp)$/i.test(t.path)
+                 &&!/^icon-\d+\.png$/i.test(t.path))
+      .map(t=>({p:t.path,sha:t.sha,s:t.size||0}));
+    try{localStorage.setItem(GKEY,JSON.stringify({ts:Date.now(),f:gFiles}));}catch(_){}
+  }
+
+  function gCats(){
+    const s=new Set();
+    gFiles.forEach(f=>{const i=f.p.indexOf("/");if(i>0)s.add(f.p.slice(0,i));});
+    return [...s].sort();
+  }
+  function renderGCats(){
+    const box=$("gcats");box.innerHTML="";
+    const mk=(v,t)=>{const el=document.createElement("div");el.className="chip"+(gCat===v?" sel":"");el.textContent=t;
+      el.onclick=()=>{gCat=v;renderG();};box.appendChild(el);};
+    const total=gFiles.length;
+    mk("__all","全部 "+total);
+    gCats().forEach(c=>{
+      const n=gFiles.filter(f=>f.p.startsWith(c+"/")).length;
+      mk(c,c+" "+n);
+    });
+  }
+  function applyFilter(){
+    let a=gFiles.filter(f=>gCat==="__all"||f.p.startsWith(gCat+"/"));
+    if(gQ){const q=gQ.toLowerCase();a=a.filter(f=>f.p.toLowerCase().includes(q));}
+    a.sort((x,y)=>x.p<y.p?1:(x.p>y.p?-1:0));
+    return a;
+  }
+  function fmtSize(b){return b>1048576?(b/1048576).toFixed(1)+" MB":Math.round(b/1024)+" KB";}
+
+  function renderG(){
+    if(!gFiles)return;
+    renderGCats();
+    gList=applyFilter();
+    const total=gList.reduce((s,f)=>s+f.s,0);
+    $("gcount").textContent=gList.length+" 张 · "+fmtSize(total);
+    $("grid").innerHTML="";gShown=0;
+    $("gempty").style.display=gFiles.length?"none":"block";
+    $("gempty").textContent=gFiles.length?"":"相册还是空的 · 去「上传」传几张";
+    if(gFiles.length&&!gList.length){$("gempty").style.display="block";$("gempty").textContent="没有匹配的图片";}
+    renderGMore();
+  }
+  function renderGMore(){
+    const grid=$("grid");
+    const end=Math.min(gShown+PAGE,gList.length);
+    for(let i=gShown;i<end;i++)grid.appendChild(cell(gList[i],i));
+    gShown=end;
+    $("gMore").style.display=gShown<gList.length?"inline-block":"none";
+  }
+  function cell(f,idx){
+    const d=document.createElement("div");d.className="gi";
+    const img=document.createElement("img");img.loading="lazy";img.decoding="async";img.alt="";
+    img.src=thumb(f.p);
+    img.onerror=function(){this.onerror=null;this.src=cdn(f.p);};
+    d.appendChild(img);
+    const tag=document.createElement("div");tag.className="tag";
+    tag.textContent=f.p.split("/").pop().replace(/\.[^.]+$/,"").replace(/^\d{8}_\d{6}_/,"");
+    d.appendChild(tag);
+    d.onclick=()=>openLB(idx);
+    return d;
+  }
+
+  async function ensureGallery(force){
+    if(gFiles&&!force){renderG();return;}
+    $("gLoading").style.display="block";$("gempty").style.display="none";
+    try{ await loadTree(force); }
+    catch(e){ $("gLoading").style.display="none";
+      $("gempty").style.display="block";
+      $("gempty").textContent="读取失败："+(e.message||e)+" · 点右上「刷新」重试";
+      $("gcount").textContent="—";return; }
+    $("gLoading").style.display="none";
+    renderG();
+  }
+
+  /* ---- 大图 ---- */
+  function openLB(i){lbList=gList;lbIdx=i;$("lb").classList.add("show");showLB();}
+  function showLB(){
+    const f=lbList[lbIdx];if(!f)return;
+    $("lbImg").src=cdn(f.p);
+    $("lbPath").textContent=f.p+"  ("+fmtSize(f.s)+")";
+    $("lbIdx").textContent=(lbIdx+1)+" / "+lbList.length;
+    $("lbDel").style.display=TOKEN?"":"none";
+    $("lbPrev").style.opacity=lbIdx>0?1:.25;
+    $("lbNext").style.opacity=lbIdx<lbList.length-1?1:.25;
+  }
+  function stepLB(d){
+    const n=lbIdx+d;if(n<0||n>=lbList.length)return;
+    lbIdx=n;showLB();
+  }
+  function closeLB(){$("lb").classList.remove("show");$("lbImg").src="";}
+
+  async function delImg(){
+    if(!TOKEN){toast("先设置 Token");return;}
+    const f=lbList[lbIdx];if(!f)return;
+    if(!confirm("删除这张图？\n"+f.p+"\n（从仓库永久删除，不可恢复）"))return;
+    try{
+      const r=await fetch(API+"/repos/"+OWNER+"/"+REPO+"/contents/"+enc(f.p),
+        {method:"DELETE",headers:hdr(true),body:JSON.stringify({message:"delete "+f.p,sha:f.sha,branch:BRANCH})});
+      if(!r.ok){let m=r.status;try{m=(await r.json()).message;}catch(_){}toast("删除失败 "+m);return;}
+      gFiles=gFiles.filter(x=>x.p!==f.p);
+      try{localStorage.setItem(GKEY,JSON.stringify({ts:Date.now(),f:gFiles}));}catch(_){}
+      toast("已删除");closeLB();renderG();
+    }catch(e){toast("删除失败："+(e.message||e));}
+  }
+
+  /* ============ 标签切换 ============ */
+  function showTab(v){
+    const isUp=v==="upload";
+    $("viewUpload").style.display=isUp?"":"none";
+    $("viewGallery").style.display=isUp?"none":"";
+    $("bottombar").style.display=isUp?"":"none";
+    document.body.classList.toggle("noBottom",!isUp);
+    document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("sel",t.dataset.v===v));
+    if(!isUp)ensureGallery(false);
+  }
+  document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showTab(t.dataset.v));
+
+  /* ============ 按钮 ============ */
   $("btnCam").onclick=()=>{ if(!TOKEN){openSheet(true);return;} $("cam").click(); };
   $("btnGal").onclick=()=>{ if(!TOKEN){openSheet(true);return;} $("gal").click(); };
   $("cam").onchange=e=>{handleFiles([...e.target.files]);e.target.value="";};
   $("gal").onchange=e=>{handleFiles([...e.target.files]);e.target.value="";};
+  $("gRefresh").onclick=async()=>{toast("刷新中…");await ensureGallery(true);};
+  $("gMore").onclick=renderGMore;
+  $("gq").oninput=e=>{gQ=e.target.value.trim();$("gqClr").style.display=gQ?"block":"none";renderG();};
+  $("gqClr").onclick=()=>{$("gq").value="";gQ="";$("gqClr").style.display="none";renderG();};
+  $("lbX").onclick=closeLB;
+  $("lbPrev").onclick=()=>stepLB(-1);
+  $("lbNext").onclick=()=>stepLB(1);
+  $("lbCopy").onclick=()=>{const f=lbList[lbIdx];if(f)navigator.clipboard.writeText(cdn(f.p)).then(()=>toast("已复制直链")).catch(()=>toast(cdn(f.p)));};
+  $("lbMd").onclick=()=>{const f=lbList[lbIdx];if(!f)return;
+    const nm=f.p.split("/").pop().replace(/\.[^.]+$/,"");
+    navigator.clipboard.writeText("!["+nm+"]("+cdn(f.p)+")").then(()=>toast("已复制 Markdown")).catch(()=>toast("复制失败"));};
+  $("lbOpen").onclick=()=>{const f=lbList[lbIdx];if(f)window.open(cdn(f.p),"_blank");};
+  $("lbDel").onclick=delImg;
+  document.addEventListener("keydown",e=>{
+    if(!$("lb").classList.contains("show"))return;
+    if(e.key==="Escape")closeLB();
+    if(e.key==="ArrowLeft")stepLB(-1);
+    if(e.key==="ArrowRight")stepLB(1);
+  });
 
-  // ---- sheet ----
+  /* ============ 设置 ============ */
   function openSheet(first){
     $("sheetTitle").textContent=first?"首次使用 · 填一次就好":"设置";
     $("tok").value=TOKEN; $("mask").classList.add("show"); setTimeout(()=>$("tok").focus(),100);
@@ -229,14 +466,13 @@
     if(!v){toast("请填 Token");return;}
     TOKEN=v;localStorage.setItem("ghpat",v);
     $("mask").classList.remove("show");
+    localStorage.removeItem(GKEY);gFiles=null;
     const ok=await checkAuth(); if(ok)toast("已就绪 ✓");
   };
 
-  // ---- boot ----
+  /* ============ boot ============ */
   renderChips();
   if(TOKEN){checkAuth();}else{openSheet(true);}
-
-  // PWA
   if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}
 })();
 </script>
