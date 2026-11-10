@@ -24,6 +24,8 @@
   .top .conn{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:5px}
   .dot{width:7px;height:7px;border-radius:50%;background:var(--sub)}
   .dot.ok{background:var(--ok)}.dot.err{background:var(--err)}.dot.warn{background:var(--warn)}
+  #btnInstall{font-size:17px;padding:0 6px;cursor:pointer;display:none;color:var(--blue)}
+  #btnInstall.show{display:inline}
   .tabs{display:flex;gap:7px;padding:0 14px 10px;max-width:640px;margin:0 auto}
   .tab{flex:1;text-align:center;padding:9px 4px;border-radius:10px;font-size:14px;color:var(--sub);
        background:var(--card2);border:1px solid var(--line);cursor:pointer;user-select:none;transition:.12s}
@@ -53,6 +55,19 @@
   .btn.gal{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
   .btn:disabled{opacity:.5}
   .empty{text-align:center;color:var(--sub);font-size:13.5px;padding:40px 0}
+  /* ---- install card ---- */
+  .instcard{display:flex;align-items:center;gap:11px;background:linear-gradient(135deg,#1b2740,#171a21);
+        border:1px solid #2b3f60;border-radius:14px;padding:12px 13px;margin-bottom:16px}
+  .instcard .ic{font-size:22px;flex:none}
+  .instcard .tx{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
+  .instcard .tx b{font-size:13.5px}
+  .instcard .tx span{font-size:11.5px;color:var(--sub)}
+  .instcard button{flex:none;background:var(--blue);border:none;color:#fff;font-weight:700;
+        border-radius:10px;padding:9px 15px;font-size:13px;cursor:pointer}
+  .instcard button:active{transform:scale(.96)}
+  .isteps{font-size:13.5px;color:var(--txt);line-height:2.05;padding-left:20px;margin:0 0 14px}
+  .isteps b{color:#fff}
+  .inote{font-size:12.5px;color:var(--warn);margin:0 0 14px;line-height:1.7}
   /* ---- gallery ---- */
   .gmeta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 10px;font-size:12.5px;color:var(--sub)}
   .gbtn{border:1px solid var(--line);background:var(--card2);border-radius:9px;padding:7px 13px;font-size:12.5px;color:var(--txt);cursor:pointer}
@@ -114,6 +129,7 @@
     <div class="top">
       <h1>🖼️ 图床</h1>
       <div class="conn"><span class="dot" id="dot"></span><span id="connTxt">…</span>
+        <span id="btnInstall" title="安装到桌面">⬇</span>
         <span id="gear" style="font-size:18px;padding:0 4px">⚙</span></div>
     </div>
     <div class="tabs">
@@ -124,6 +140,11 @@
 
   <!-- ============ 上传 ============ -->
   <div class="wrap" id="viewUpload">
+    <div class="instcard" id="instCard">
+      <div class="ic">📲</div>
+      <div class="tx"><b>装到桌面，当 App 用</b><span>安卓 / iOS 都行，不用下载安装包</span></div>
+      <button id="instBtn2">安装</button>
+    </div>
     <div class="sec">
       <div class="lbl">选择类型</div>
       <div class="chips" id="chips"></div>
@@ -193,6 +214,17 @@
       </details>
     </div>
   </div>
+  <!-- 安装引导 -->
+  <div class="mask" id="maskInst">
+    <div class="sheet">
+      <h2 id="instTitle">📲 装到桌面</h2>
+      <p id="instSub">按下面几步操作，桌面就会多一个「图床」图标，点开即用。</p>
+      <div class="inote" id="instNote" style="display:none"></div>
+      <ol class="isteps" id="instSteps"></ol>
+      <div class="row"><button class="btn cam" id="instOk">知道了</button></div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
 <script>
@@ -469,6 +501,84 @@
     localStorage.removeItem(GKEY);gFiles=null;
     const ok=await checkAuth(); if(ok)toast("已就绪 ✓");
   };
+
+  /* ============ 安装到桌面 ============ */
+  let deferredPrompt=null;
+  const UA=navigator.userAgent;
+  const isStandalone=()=>window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+  const isIOS=()=>/iphone|ipad|ipod/i.test(UA)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  const isWeChat=()=>/MicroMessenger|wxwork/i.test(UA);
+  const isAndroid=()=>/android/i.test(UA);
+
+  function refreshInstallUI(){
+    const st=isStandalone();
+    $("instCard").style.display=st?"none":"";
+    $("btnInstall").classList.toggle("show",!st);
+  }
+  function showInstSheet(){
+    const steps=$("instSteps");steps.innerHTML="";
+    const add=t=>{const li=document.createElement("li");li.innerHTML=t;steps.appendChild(li);};
+    const note=$("instNote");note.style.display="none";steps.style.display="";
+    $("instTitle").textContent="📲 装到桌面";
+    $("instSub").textContent="按下面几步操作，桌面就会多一个「图床」图标，点开即用。";
+    if(isStandalone()){
+      $("instTitle").textContent="✅ 已经装好了";
+      $("instSub").textContent="你现在就是从桌面图标打开的，不用再装一次。";
+      steps.style.display="none";$("maskInst").classList.add("show");return;
+    }
+    if(isWeChat()){
+      $("instTitle").textContent="⚠️ 先在浏览器里打开";
+      $("instSub").textContent="微信 / 企业微信的内置浏览器不支持安装，要换系统浏览器。";
+      note.style.display="";
+      note.textContent="操作：点右上角「…」→ 选「在浏览器打开」，然后把下面几步做完。";
+      add("用 <b>Chrome</b>（安卓）或 <b>Safari</b>（iPhone）打开本页");
+      add("点右上角 <b>⬇ 安装</b> 按钮，或页面顶部「安装」卡片");
+      add("按提示确认，桌面出现「图床」图标 ✓");
+      $("maskInst").classList.add("show");return;
+    }
+    if(isIOS()){
+      $("instTitle").textContent="🍎 iPhone / iPad 安装";
+      $("instSub").textContent="iOS 通过 Safari「添加到主屏幕」，装完桌面就有图标。";
+      add("确认是用 <b>Safari</b> 打开的（微信 / QQ 里不行）");
+      add("点屏幕<b>底部中间的分享按钮</b> ⤴（方框+向上箭头）");
+      add("在弹出的菜单里往下滑，点 <b>添加到主屏幕</b>");
+      add("右上角点 <b>添加</b>，完成 ✓");
+      $("maskInst").classList.add("show");return;
+    }
+    if(isAndroid()){
+      $("instTitle").textContent="🤖 安卓安装";
+      $("instSub").textContent="用 Chrome 打开，几步就能生成桌面图标。";
+      add("确认是用 <b>Chrome</b> 打开的");
+      add("先点本页的 <b>⬇ 安装</b> 按钮（有原生弹窗就直接确认）");
+      add("没反应就点浏览器右上角 <b>⋮</b> → <b>安装应用 / 添加到主屏幕</b>");
+      add("确认后桌面出现「图床」图标 ✓");
+    } else {
+      $("instTitle").textContent="💻 电脑上安装";
+      $("instSub").textContent="Chrome / Edge 装完是一个独立窗口 App，不占浏览器标签。";
+      add("看地址栏右侧有没有 <b>安装</b> 图标（显示器+箭头）");
+      add("没有就点 <b>⋮</b> → <b>投放、保存和分享</b> → <b>安装页面为应用</b>");
+      add("装好后在启动台 / 开始菜单里搜「图床」");
+    }
+    $("maskInst").classList.add("show");
+  }
+  async function doInstall(){
+    if(deferredPrompt){
+      try{
+        deferredPrompt.prompt();
+        const ch=await deferredPrompt.userChoice;
+        deferredPrompt=null;
+        toast(ch&&ch.outcome==="accepted"?"安装中…":"已取消");
+      }catch(_){ showInstSheet(); }
+      refreshInstallUI();return;
+    }
+    showInstSheet();
+  }
+  window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;refreshInstallUI();});
+  window.addEventListener("appinstalled",()=>{deferredPrompt=null;toast("已安装到桌面 ✓");refreshInstallUI();});
+  $("btnInstall").onclick=doInstall;
+  $("instBtn2").onclick=doInstall;
+  $("instOk").onclick=()=>$("maskInst").classList.remove("show");
+  refreshInstallUI();
 
   /* ============ boot ============ */
   renderChips();
