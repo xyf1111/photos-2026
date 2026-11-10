@@ -221,6 +221,7 @@
       <p id="instSub">按下面几步操作，桌面就会多一个「图床」图标，点开即用。</p>
       <div class="inote" id="instNote" style="display:none"></div>
       <ol class="isteps" id="instSteps"></ol>
+      <div class="row" id="instCopyRow" style="display:none"><button class="btn ghost" id="instCopy">📋 复制本页链接</button></div>
       <div class="row"><button class="btn cam" id="instOk">知道了</button></div>
     </div>
   </div>
@@ -509,6 +510,7 @@
   const isIOS=()=>/iphone|ipad|ipod/i.test(UA)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
   const isWeChat=()=>/MicroMessenger|wxwork/i.test(UA);
   const isAndroid=()=>/android/i.test(UA);
+  const isInApp=()=>/MicroMessenger|wxwork|QQ\/|Weibo|AlipayClient|DingTalk|Feishu|Lark|baiduboxapp|aweme|; wv\)/i.test(UA);
 
   function refreshInstallUI(){
     const st=isStandalone();
@@ -519,6 +521,7 @@
     const steps=$("instSteps");steps.innerHTML="";
     const add=t=>{const li=document.createElement("li");li.innerHTML=t;steps.appendChild(li);};
     const note=$("instNote");note.style.display="none";steps.style.display="";
+    $("instCopyRow").style.display="none";
     $("instTitle").textContent="📲 装到桌面";
     $("instSub").textContent="按下面几步操作，桌面就会多一个「图床」图标，点开即用。";
     if(isStandalone()){
@@ -526,14 +529,16 @@
       $("instSub").textContent="你现在就是从桌面图标打开的，不用再装一次。";
       steps.style.display="none";$("maskInst").classList.add("show");return;
     }
-    if(isWeChat()){
+    if(isInApp()){
       $("instTitle").textContent="⚠️ 先在浏览器里打开";
-      $("instSub").textContent="微信 / 企业微信的内置浏览器不支持安装，要换系统浏览器。";
+      $("instSub").textContent="微信 / 企业微信的内置浏览器装不了 App（点安装只会「已取消」），要换系统浏览器。";
       note.style.display="";
-      note.textContent="操作：点右上角「…」→ 选「在浏览器打开」，然后把下面几步做完。";
-      add("用 <b>Chrome</b>（安卓）或 <b>Safari</b>（iPhone）打开本页");
-      add("点右上角 <b>⬇ 安装</b> 按钮，或页面顶部「安装」卡片");
-      add("按提示确认，桌面出现「图床」图标 ✓");
+      note.textContent="操作：点右上角「…」→ 选「在浏览器打开」，没这一项就先「复制链接」再粘贴到浏览器。";
+      $("instCopyRow").style.display="";
+      add("点 <b>📋 复制本页链接</b>（在下面）");
+      add("打开手机的 <b>Chrome</b>（安卓）或 <b>Safari</b>（iPhone）");
+      add("把链接粘到地址栏打开");
+      add("再点页面上的 <b>⬇ 安装</b> / 「安装」卡片 ✓");
       $("maskInst").classList.add("show");return;
     }
     if(isIOS()){
@@ -562,12 +567,15 @@
     $("maskInst").classList.add("show");
   }
   async function doInstall(){
+    // 企微/微信等内嵌浏览器：装了也只会「已取消」，直接给步骤
+    if(isInApp()){ showInstSheet(); return; }
     if(deferredPrompt){
       try{
-        deferredPrompt.prompt();
-        const ch=await deferredPrompt.userChoice;
-        deferredPrompt=null;
-        toast(ch&&ch.outcome==="accepted"?"安装中…":"已取消");
+        const p=deferredPrompt; deferredPrompt=null;
+        p.prompt();
+        const ch=await p.userChoice;
+        if(ch&&ch.outcome==="accepted"){ toast("安装中…"); }
+        else { toast("浏览器没弹安装框 · 按步骤手动装"); showInstSheet(); }
       }catch(_){ showInstSheet(); }
       refreshInstallUI();return;
     }
@@ -578,6 +586,25 @@
   $("btnInstall").onclick=doInstall;
   $("instBtn2").onclick=doInstall;
   $("instOk").onclick=()=>$("maskInst").classList.remove("show");
+  function copyText(t,cb){
+    if(navigator.clipboard&&window.isSecureContext){
+      navigator.clipboard.writeText(t).then(()=>cb(true)).catch(()=>cb(false));
+    }else{
+      try{
+        const ta=document.createElement("textarea");ta.value=t;ta.style.position="fixed";ta.style.opacity="0";
+        document.body.appendChild(ta);ta.select();const ok=document.execCommand("copy");document.body.removeChild(ta);
+        cb(ok);
+      }catch(_){cb(false);}
+    }
+  }
+  $("instCopy").onclick=()=>{
+    const url=location.href;
+    $("instOk").textContent="知道了";
+    copyText(url,ok=>{
+      if(ok){toast("链接已复制 · 去浏览器粘贴打开");}
+      else{toast("复制失败，长按本页地址栏手动复制");}
+    });
+  };
   refreshInstallUI();
 
   /* ============ boot ============ */
